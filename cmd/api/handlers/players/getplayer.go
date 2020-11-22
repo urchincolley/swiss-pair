@@ -3,12 +3,10 @@
 package players
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/urchincolley/swiss-pair/cmd/api/handlers"
@@ -22,25 +20,8 @@ var GetHandler = handlers.Handler{
 	Handle: getPlayer,
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
-		validatePlayerIdRequest,
+		handlers.IdRequestValidator(models.CtxKey("playerid")),
 	},
-}
-
-func validatePlayerIdRequest(next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		uid := p.ByName("id")
-
-		id, err := strconv.Atoi(uid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "malformed id")
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), models.CtxKey("playerid"), id)
-		r = r.WithContext(ctx)
-		next(w, r, p)
-	}
 }
 
 func getPlayer(app *application.Application) httprouter.Handle {

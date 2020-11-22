@@ -17,7 +17,7 @@ var DeleteHandler = handlers.Handler{
 	Handle: deletePlayer,
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
-		validatePlayerIdRequest,
+		handlers.IdRequestValidator(models.CtxKey("playerid")),
 	},
 }
 

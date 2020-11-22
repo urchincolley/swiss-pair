@@ -3,6 +3,7 @@ package players
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/urchincolley/swiss-pair/cmd/api/handlers"
 	"github.com/urchincolley/swiss-pair/cmd/api/models"
 	"github.com/urchincolley/swiss-pair/pkg/application"
-	"github.com/urchincolley/swiss-pair/pkg/logger"
+	errs "github.com/urchincolley/swiss-pair/pkg/errors"
 	"github.com/urchincolley/swiss-pair/pkg/middleware"
 )
 
@@ -28,7 +29,6 @@ func validateCreateRequest(next httprouter.Handle) httprouter.Handle {
 
 		player := &models.Player{}
 		json.NewDecoder(r.Body).Decode(player)
-		logger.Debug.Printf("%v", player)
 
 		var err error
 		if player.Email == "" {
@@ -42,7 +42,7 @@ func validateCreateRequest(next httprouter.Handle) httprouter.Handle {
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, fmt.Sprintf("%e", err))
+			fmt.Fprintf(w, "%e", err)
 		}
 
 		ctx := context.WithValue(r.Context(), models.CtxKey("player"), player)
@@ -58,8 +58,14 @@ func createPlayer(app *application.Application) httprouter.Handle {
 		player := r.Context().Value(models.CtxKey("player")).(*models.Player)
 
 		if err := player.Create(r.Context(), app); err != nil {
+			if errors.Is(err, errs.AlreadyExists) {
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprintf(w, "a player with email %s already exists", player.Email)
+				return
+			}
+
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Player creation failed")
+			fmt.Fprintf(w, "player creaton failed")
 			return
 		}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/urchincolley/swiss-pair/pkg/application"
 	errs "github.com/urchincolley/swiss-pair/pkg/errors"
@@ -31,6 +32,9 @@ func (p *Player) Create(ctx context.Context, app *application.Application) error
 	).Scan(&p.ID)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return errs.AlreadyExists
+		}
 		return err
 	}
 
