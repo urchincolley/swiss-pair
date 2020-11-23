@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/urchincolley/swiss-pair/pkg/application"
-	errs "github.com/urchincolley/swiss-pair/pkg/errors"
 )
 
 type Player struct {
@@ -17,7 +16,7 @@ type Player struct {
 	Email     string `json:"email"`
 }
 
-type Players []Player
+func (p *Player) WithId(id int) { p.ID = id }
 
 func (p *Player) Create(ctx context.Context, app *application.Application) error {
 	stmt := `
@@ -33,7 +32,7 @@ func (p *Player) Create(ctx context.Context, app *application.Application) error
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return errs.AlreadyExists
+			return err
 		}
 		return err
 	}
@@ -41,7 +40,7 @@ func (p *Player) Create(ctx context.Context, app *application.Application) error
 	return nil
 }
 
-func (p *Player) GetByID(ctx context.Context, app *application.Application) error {
+func (p *Player) GetById(ctx context.Context, app *application.Application) error {
 	stmt := `
     SELECT first_name, last_name, email
     FROM players
@@ -54,13 +53,72 @@ func (p *Player) GetByID(ctx context.Context, app *application.Application) erro
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return errs.NotFound
+			return err
+			//return errs.NotFound
 		}
 		return err
 	}
 
 	return nil
 }
+
+func (p *Player) Update(ctx context.Context, app *application.Application) error {
+	stmt := `
+		UPDATE players SET (
+			first_name, last_name, email
+		) = ($2, $3, $4)
+		WHERE id = $1
+		RETURNING id
+  `
+
+	res, err := app.DB.Client.ExecContext(
+		ctx, stmt, p.ID, p.FirstName, p.LastName, p.Email,
+	)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return err
+			//return errs.Conflict(fmt.Sprintf("event with name %s already exists", e.Name))
+		}
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows != 1 {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Player) Delete(ctx context.Context, app *application.Application) error {
+	stmt := `
+		DELETE FROM players
+    WHERE id = $1
+  `
+
+	res, err := app.DB.Client.ExecContext(ctx, stmt, p.ID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows != 1 {
+		return err
+	}
+
+	return nil
+}
+
+type Players []Player
 
 func (ps *Players) List(ctx context.Context, app *application.Application) error {
 	stmt := `
@@ -89,25 +147,6 @@ func (ps *Players) List(ctx context.Context, app *application.Application) error
 	return nil
 }
 
-func (p *Player) Delete(ctx context.Context, app *application.Application) error {
-	stmt := `
-		DELETE FROM players
-    WHERE id = $1
-  `
-
-	res, err := app.DB.Client.ExecContext(ctx, stmt, p.ID)
-	if err != nil {
-		return err
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows != 1 {
-		return errs.NotFound
-	}
-
-	return nil
-}
+func GenPlayer() Model             { return &Player{} }
+func GenPlayers() Models           { return &Players{} }
+func AsPlayer(i interface{}) Model { return i.(*Player) }
