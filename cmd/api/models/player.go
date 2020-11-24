@@ -2,9 +2,6 @@ package models
 
 import (
 	"context"
-	"database/sql"
-	"errors"
-	"strings"
 
 	"github.com/urchincolley/swiss-pair/pkg/application"
 )
@@ -25,19 +22,9 @@ func (p *Player) Create(ctx context.Context, app *application.Application) error
     ) VALUES ($1, $2, $3)
     RETURNING id
   `
-
-	err := app.DB.Client.QueryRowContext(
+	return app.DB.Client.QueryRowContext(
 		ctx, stmt, p.FirstName, p.LastName, p.Email,
 	).Scan(&p.ID)
-
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return err
-		}
-		return err
-	}
-
-	return nil
 }
 
 func (p *Player) GetById(ctx context.Context, app *application.Application) error {
@@ -46,20 +33,9 @@ func (p *Player) GetById(ctx context.Context, app *application.Application) erro
     FROM players
     WHERE id = $1
   `
-
-	err := app.DB.Client.QueryRowContext(
+	return app.DB.Client.QueryRowContext(
 		ctx, stmt, p.ID,
 	).Scan(&p.FirstName, &p.LastName, &p.Email)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return err
-			//return errs.NotFound
-		}
-		return err
-	}
-
-	return nil
 }
 
 func (p *Player) Update(ctx context.Context, app *application.Application) error {
@@ -70,52 +46,18 @@ func (p *Player) Update(ctx context.Context, app *application.Application) error
 		WHERE id = $1
 		RETURNING id
   `
-
-	res, err := app.DB.Client.ExecContext(
+	return app.DB.Client.QueryRowContext(
 		ctx, stmt, p.ID, p.FirstName, p.LastName, p.Email,
-	)
-
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return err
-			//return errs.Conflict(fmt.Sprintf("event with name %s already exists", e.Name))
-		}
-		return err
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows != 1 {
-		return err
-	}
-
-	return nil
+	).Scan(&p.ID)
 }
 
 func (p *Player) Delete(ctx context.Context, app *application.Application) error {
 	stmt := `
 		DELETE FROM players
     WHERE id = $1
+		RETURNING id
   `
-
-	res, err := app.DB.Client.ExecContext(ctx, stmt, p.ID)
-	if err != nil {
-		return err
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows != 1 {
-		return err
-	}
-
-	return nil
+	return app.DB.Client.QueryRowContext(ctx, stmt, p.ID).Scan(&p.ID)
 }
 
 type Players []Player
@@ -140,13 +82,9 @@ func (ps *Players) List(ctx context.Context, app *application.Application) error
 		*ps = append(*ps, p)
 	}
 
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return rows.Err()
 }
 
-func GenPlayer() Model             { return &Player{} }
-func GenPlayers() Models           { return &Players{} }
-func AsPlayer(i interface{}) Model { return i.(*Player) }
+func GenPlayer() SingleIndexModel             { return &Player{} }
+func GenPlayers() NoIndexModel                { return &Players{} }
+func AsPlayer(i interface{}) SingleIndexModel { return i.(*Player) }

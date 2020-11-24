@@ -6,8 +6,15 @@ import (
 	"github.com/urchincolley/swiss-pair/pkg/middleware"
 )
 
+var ListHandler = handlers.Handler{
+	Handle: handlers.List(models.GenEvents),
+	Middleware: []middleware.Middleware{
+		middleware.LogRequest,
+	},
+}
+
 var CreateHandler = handlers.Handler{
-	Handle: handlers.CreateItem(models.AsEvent),
+	Handle: handlers.Create(models.AsEvent),
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
 		validateUpsertRequest,
@@ -15,22 +22,15 @@ var CreateHandler = handlers.Handler{
 }
 
 var GetHandler = handlers.Handler{
-	Handle: handlers.GetItem(models.GenEvent),
+	Handle: handlers.Get(models.GenEvent),
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
 		handlers.IdRequestValidator,
 	},
 }
 
-var ListHandler = handlers.Handler{
-	Handle: handlers.ListItems(models.GenEvents),
-	Middleware: []middleware.Middleware{
-		middleware.LogRequest,
-	},
-}
-
 var UpdateHandler = handlers.Handler{
-	Handle: handlers.UpdateItem(models.AsEvent),
+	Handle: handlers.Update(models.AsEvent),
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
 		handlers.IdRequestValidator,
@@ -39,7 +39,7 @@ var UpdateHandler = handlers.Handler{
 }
 
 var DeleteHandler = handlers.Handler{
-	Handle: handlers.DeleteItem(models.GenEvent),
+	Handle: handlers.Delete(models.GenEvent),
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
 		handlers.IdRequestValidator,

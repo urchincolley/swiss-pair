@@ -2,9 +2,6 @@ package models
 
 import (
 	"context"
-	"database/sql"
-	"errors"
-	"strings"
 
 	"github.com/urchincolley/swiss-pair/pkg/application"
 )
@@ -23,16 +20,7 @@ func (e *Event) Create(ctx context.Context, app *application.Application) error 
     ) VALUES ($1)
     RETURNING id
   `
-
-	err := app.DB.Client.QueryRowContext(ctx, stmt, e.Name).Scan(&e.ID)
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return err
-		}
-		return err
-	}
-
-	return nil
+	return app.DB.Client.QueryRowContext(ctx, stmt, e.Name).Scan(&e.ID)
 }
 
 func (e *Event) GetById(ctx context.Context, app *application.Application) error {
@@ -41,17 +29,7 @@ func (e *Event) GetById(ctx context.Context, app *application.Application) error
 		FROM events
     WHERE id = $1
   `
-
-	err := app.DB.Client.QueryRowContext(ctx, stmt, e.ID).Scan(&e.Name)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return err
-			//return errs.NotFound("event not found")
-		}
-		return err
-	}
-
-	return nil
+	return app.DB.Client.QueryRowContext(ctx, stmt, e.ID).Scan(&e.Name)
 }
 
 func (e *Event) Update(ctx context.Context, app *application.Application) error {
@@ -61,48 +39,17 @@ func (e *Event) Update(ctx context.Context, app *application.Application) error 
 		WHERE id = $1
 		RETURNING id
   `
-
-	res, err := app.DB.Client.ExecContext(
-		ctx, stmt, e.ID, e.Name,
-	)
-
-	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			return err
-			//return errs.Conflict(fmt.Sprintf("event with name %s already exists", e.Name))
-		}
-		return err
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows != 1 {
-		return err
-	}
-
-	return nil
+	return app.DB.Client.QueryRowContext(ctx, stmt, e.ID, e.Name).Scan(&e.ID)
 }
 
 func (e *Event) Delete(ctx context.Context, app *application.Application) error {
 	stmt := `
 		DELETE FROM events
     WHERE id = $1
+		RETURNING id
   `
+	return app.DB.Client.QueryRowContext(ctx, stmt, e.ID).Scan(&e.ID)
 
-	res, err := app.DB.Client.ExecContext(ctx, stmt, e.ID)
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows != 1 {
-		return errors.New("event not found")
-	}
-
-	return nil
 }
 
 type Events []Event
@@ -127,13 +74,9 @@ func (es *Events) List(ctx context.Context, app *application.Application) error 
 		*es = append(*es, e)
 	}
 
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return rows.Err()
 }
 
-func GenEvent() Model             { return &Event{} }
-func GenEvents() Models           { return &Events{} }
-func AsEvent(i interface{}) Model { return i.(*Event) }
+func GenEvent() SingleIndexModel             { return &Event{} }
+func GenEvents() NoIndexModel                { return &Events{} }
+func AsEvent(i interface{}) SingleIndexModel { return i.(*Event) }
