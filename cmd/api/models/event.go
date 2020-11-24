@@ -43,13 +43,15 @@ func (e *Event) Update(ctx context.Context, app *application.Application) error 
 }
 
 func (e *Event) Delete(ctx context.Context, app *application.Application) error {
-	stmt := `
-		DELETE FROM events
-    WHERE id = $1
-		RETURNING id
-  `
-	return app.DB.Client.QueryRowContext(ctx, stmt, e.ID).Scan(&e.ID)
+	stmt := `DELETE FROM eventplayers WHERE event_id = $1`
+	_, err := app.DB.Client.ExecContext(ctx, stmt, e.ID)
+	if err != nil {
+		return err
+	}
 
+	stmt = `DELETE FROM events WHERE id = $1`
+	_, err = app.DB.Client.ExecContext(ctx, stmt, e.ID)
+	return err
 }
 
 type Events []Event

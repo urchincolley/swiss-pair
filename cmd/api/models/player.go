@@ -52,12 +52,15 @@ func (p *Player) Update(ctx context.Context, app *application.Application) error
 }
 
 func (p *Player) Delete(ctx context.Context, app *application.Application) error {
-	stmt := `
-		DELETE FROM players
-    WHERE id = $1
-		RETURNING id
-  `
-	return app.DB.Client.QueryRowContext(ctx, stmt, p.ID).Scan(&p.ID)
+	stmt := `DELETE FROM eventplayers WHERE player_id = $1`
+	_, err := app.DB.Client.ExecContext(ctx, stmt, p.ID)
+	if err != nil {
+		return err
+	}
+
+	stmt = `DELETE FROM players WHERE id = $1`
+	_, err = app.DB.Client.ExecContext(ctx, stmt, p.ID)
+	return err
 }
 
 type Players []Player

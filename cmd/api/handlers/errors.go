@@ -13,6 +13,9 @@ func HttpStatusFromError(e error) int {
 	if strings.Contains(e.Error(), "duplicate key value violates unique constraint") {
 		return http.StatusForbidden
 	}
+	if strings.Contains(e.Error(), "violates foreign key constraint") {
+		return http.StatusBadRequest
+	}
 	if errors.Is(e, sql.ErrNoRows) {
 		return http.StatusNotFound
 	}

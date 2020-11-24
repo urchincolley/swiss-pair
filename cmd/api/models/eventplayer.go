@@ -24,43 +24,22 @@ func (e *EventPlayers) Create(ctx context.Context, app *application.Application)
 
 // List all players for Event
 func (e *EventPlayers) GetById(ctx context.Context, app *application.Application) error {
-	stmt := fmt.Sprintf(`
-    SELECT player_id
-    FROM eventplayers
-    WHERE event_id = %v
-  `, e.EventId)
-	return e.execute(ctx, app, stmt)
+	return e.list(ctx, app)
 }
 
 // Add the provided set of EventPlayers
 func (e *EventPlayers) Update(ctx context.Context, app *application.Application) error {
-	vs := make([]string, len(e.PlayerIds))
-
-	stmt := ""
+	var err error
 	if ctx.Value(CtxKey("method")).(string) == "PATCH" {
-		for i, pid := range e.PlayerIds {
-			vs[i] = fmt.Sprintf("(%d, %d)", e.EventId, pid)
-		}
-
-		stmt = fmt.Sprintf(`
-			INSERT INTO eventplayers (event_id, player_id)
-			VALUES %s ON CONFLICT DO NOTHING
-			RETURNING player_id
-		`, strings.Join(vs, ", "))
+		err = e.add(ctx, app)
 	} else {
-		for i, pid := range e.PlayerIds {
-			vs[i] = fmt.Sprintf("%d", pid)
-		}
-
-		stmt = fmt.Sprintf(`
-			DELETE FROM eventplayers
-			WHERE event_id = %v
-			AND player_id IN (%s)
-			RETURNING player_id
-		`, e.EventId, strings.Join(vs, ", "))
+		err = e.drop(ctx, app)
+	}
+	if err != nil {
+		return err
 	}
 
-	return e.execute(ctx, app, stmt)
+	return e.list(ctx, app)
 }
 
 // Drop also uses Update
@@ -68,9 +47,41 @@ func (e *EventPlayers) Delete(ctx context.Context, app *application.Application)
 	return errors.New("not implemented")
 }
 
-func (e *EventPlayers) execute(ctx context.Context, app *application.Application, stmt string) error {
-	fmt.Printf("\n\n**** execute stmt %v ****\n\n", stmt)
-	rows, err := app.DB.Client.QueryContext(ctx, stmt)
+func (e *EventPlayers) add(ctx context.Context, app *application.Application) error {
+	vs := make([]string, len(e.PlayerIds))
+	for i, pid := range e.PlayerIds {
+		vs[i] = fmt.Sprintf("(%d, %d)", e.EventId, pid)
+	}
+
+	stmt := fmt.Sprintf(`
+		INSERT INTO eventplayers (event_id, player_id)
+		VALUES %s ON CONFLICT DO NOTHING
+	`, strings.Join(vs, ", "))
+
+	_, err := app.DB.Client.ExecContext(ctx, stmt)
+	return err
+}
+
+func (e *EventPlayers) drop(ctx context.Context, app *application.Application) error {
+	vs := make([]string, len(e.PlayerIds))
+	for i, pid := range e.PlayerIds {
+		vs[i] = fmt.Sprintf("%d", pid)
+	}
+
+	stmt := fmt.Sprintf(`
+		DELETE FROM eventplayers
+		WHERE event_id = $1
+		AND player_id IN (%s)
+	`, strings.Join(vs, ", "))
+
+	_, err := app.DB.Client.ExecContext(ctx, stmt, e.EventId)
+	return err
+}
+
+func (e *EventPlayers) list(ctx context.Context, app *application.Application) error {
+	stmt := `SELECT player_id FROM eventplayers WHERE event_id = $1`
+
+	rows, err := app.DB.Client.QueryContext(ctx, stmt, e.EventId)
 	if err != nil {
 		return err
 	}
