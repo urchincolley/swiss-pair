@@ -11,7 +11,9 @@ type Event struct {
 	Name string `json:"name"`
 }
 
-func (e *Event) WithId(id int) { e.ID = id }
+func (e *Event) PopulateFromContext(ctx context.Context) {
+	e.ID = ctx.Value(CtxKey("id")).(int)
+}
 
 func (e *Event) Create(ctx context.Context, app *application.Application) error {
 	stmt := `
@@ -23,7 +25,7 @@ func (e *Event) Create(ctx context.Context, app *application.Application) error 
 	return app.DB.Client.QueryRowContext(ctx, stmt, e.Name).Scan(&e.ID)
 }
 
-func (e *Event) GetById(ctx context.Context, app *application.Application) error {
+func (e *Event) Get(ctx context.Context, app *application.Application) error {
 	stmt := `
     SELECT name
 		FROM events
@@ -79,6 +81,6 @@ func (es *Events) List(ctx context.Context, app *application.Application) error 
 	return rows.Err()
 }
 
-func GenEvent() SingleIndexModel             { return &Event{} }
-func GenEvents() NoIndexModel                { return &Events{} }
-func AsEvent(i interface{}) SingleIndexModel { return i.(*Event) }
+func GenEvent() Model             { return &Event{} }
+func GenEvents() Models           { return &Events{} }
+func AsEvent(i interface{}) Model { return i.(*Event) }

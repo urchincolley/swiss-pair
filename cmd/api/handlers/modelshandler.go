@@ -11,7 +11,7 @@ import (
 	"github.com/urchincolley/swiss-pair/pkg/logger"
 )
 
-func List(gen func() models.NoIndexModel) HandleFunc {
+func List(gen func() models.Models) HandleFunc {
 	return func(app *application.Application) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			defer r.Body.Close()

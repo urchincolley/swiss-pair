@@ -13,7 +13,9 @@ type Player struct {
 	Email     string `json:"email"`
 }
 
-func (p *Player) WithId(id int) { p.ID = id }
+func (p *Player) PopulateFromContext(ctx context.Context) {
+	p.ID = ctx.Value(CtxKey("id")).(int)
+}
 
 func (p *Player) Create(ctx context.Context, app *application.Application) error {
 	stmt := `
@@ -27,7 +29,7 @@ func (p *Player) Create(ctx context.Context, app *application.Application) error
 	).Scan(&p.ID)
 }
 
-func (p *Player) GetById(ctx context.Context, app *application.Application) error {
+func (p *Player) Get(ctx context.Context, app *application.Application) error {
 	stmt := `
     SELECT first_name, last_name, email
     FROM players
@@ -88,6 +90,6 @@ func (ps *Players) List(ctx context.Context, app *application.Application) error
 	return rows.Err()
 }
 
-func GenPlayer() SingleIndexModel             { return &Player{} }
-func GenPlayers() NoIndexModel                { return &Players{} }
-func AsPlayer(i interface{}) SingleIndexModel { return i.(*Player) }
+func GenPlayer() Model             { return &Player{} }
+func GenPlayers() Models           { return &Players{} }
+func AsPlayer(i interface{}) Model { return i.(*Player) }

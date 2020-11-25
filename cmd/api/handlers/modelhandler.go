@@ -11,7 +11,7 @@ import (
 	"github.com/urchincolley/swiss-pair/pkg/logger"
 )
 
-func Create(as func(interface{}) models.SingleIndexModel) HandleFunc {
+func Create(as func(interface{}) models.Model) HandleFunc {
 	return func(app *application.Application) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			defer r.Body.Close()
@@ -33,16 +33,15 @@ func Create(as func(interface{}) models.SingleIndexModel) HandleFunc {
 	}
 }
 
-func Get(gen func() models.SingleIndexModel) HandleFunc {
+func Get(gen func() models.Model) HandleFunc {
 	return func(app *application.Application) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			defer r.Body.Close()
 
-			id := r.Context().Value(models.CtxKey("id")).(int)
 			m := gen()
-			m.WithId(id)
+			m.PopulateFromContext(r.Context())
 
-			if err := m.GetById(r.Context(), app); err != nil {
+			if err := m.Get(r.Context(), app); err != nil {
 				logger.Error.Printf("get error: %s", err.Error())
 				w.WriteHeader(HttpStatusFromError(err))
 				fmt.Fprintf(w, "%e", err)
@@ -57,14 +56,13 @@ func Get(gen func() models.SingleIndexModel) HandleFunc {
 	}
 }
 
-func Update(as func(interface{}) models.SingleIndexModel) HandleFunc {
+func Update(as func(interface{}) models.Model) HandleFunc {
 	return func(app *application.Application) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			defer r.Body.Close()
 
 			m := as(r.Context().Value(models.CtxKey("item")))
-			id := r.Context().Value(models.CtxKey("id")).(int)
-			m.WithId(id)
+			m.PopulateFromContext(r.Context())
 
 			if err := m.Update(r.Context(), app); err != nil {
 				logger.Error.Printf("update error: %s", err.Error())
@@ -81,14 +79,13 @@ func Update(as func(interface{}) models.SingleIndexModel) HandleFunc {
 	}
 }
 
-func Delete(gen func() models.SingleIndexModel) HandleFunc {
+func Delete(gen func() models.Model) HandleFunc {
 	return func(app *application.Application) httprouter.Handle {
 		return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			defer r.Body.Close()
 
-			id := r.Context().Value(models.CtxKey("id")).(int)
 			m := gen()
-			m.WithId(id)
+			m.PopulateFromContext(r.Context())
 
 			if err := m.Delete(r.Context(), app); err != nil {
 				logger.Error.Printf("delete error: %s", err.Error())

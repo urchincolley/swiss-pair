@@ -7,21 +7,20 @@ import (
 )
 
 // Handlers for endpoints that have no url params
-type NoIndexModel interface {
+type Models interface {
 	List(ctx context.Context, app *application.Application) error
 }
 
 // Handlers for endpoints that have one url param
-type SingleIndexModel interface {
-	WithId(int)
+type Model interface {
+	PopulateFromContext(context.Context)
 	Create(context.Context, *application.Application) error
-	GetById(context.Context, *application.Application) error
+	Get(context.Context, *application.Application) error
 	Update(context.Context, *application.Application) error
 	Delete(context.Context, *application.Application) error
 }
 
 type DoubleIndexModel interface {
 	WithIds(int, int)
-	Upsert(context.Context, *application.Application) error
-	Drop(context.Context, *application.Application) error
+	Get(context.Context, *application.Application) error
 }
