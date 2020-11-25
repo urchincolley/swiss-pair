@@ -6,6 +6,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/urchincolley/swiss-pair/cmd/api/handlers/eventplayers"
 	"github.com/urchincolley/swiss-pair/cmd/api/handlers/events"
+	"github.com/urchincolley/swiss-pair/cmd/api/handlers/pairings"
 	"github.com/urchincolley/swiss-pair/cmd/api/handlers/players"
 	"github.com/urchincolley/swiss-pair/pkg/application"
 )
@@ -30,8 +31,8 @@ func Get(app *application.Application) *httprouter.Router {
 
 	// IS THIS A DB TABLE AT ALL?
 	// eid = event id, pid = player id
-	//mux.GET("/events/:id/records", records.GetHandler.Do(app)) // standings (one player) // body {"player_id": ""}
-	//mux.GET("/events/:id/records", records.ListHandler.Do(app)) // standings
+	//mux.GET("/events/:id/records", standings.GetHandler.Do(app)) // standings (one player) // body {"player_id": ""}
+	//mux.GET("/events/:id/records", standings.ListHandler.Do(app)) // standings
 
 	// could results and pairings can be same table, multiple routes
 	//mux.GET("/events/:id/results", records.GetHandler.Do(app)) // results (one table) // body {"round": "", "table": ""}
@@ -40,6 +41,7 @@ func Get(app *application.Application) *httprouter.Router {
 	// tid = table id, eid = event id, pid = player id
 	//mux.GET("/events/:id/pairings", pairings.GetHandler.Do(app)) // body {"round": "", "table": ""}
 
-	//mux.GET("/events/:id/pairings", pairings.ListHandler.Do(app))
+	mux.GET("/events/:id/pairings", pairings.ListHandler.Do(app))
+	//mux.POST("/events/:id/pair", pairings.PairHandler.Do(app))
 	return mux
 }
