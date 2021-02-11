@@ -29,7 +29,7 @@ func (e *EventPlayers) Create(ctx context.Context, app *application.Application)
 
 // List all players for Event
 func (e *EventPlayers) Get(ctx context.Context, app *application.Application) error {
-	return e.list(ctx, app)
+	return e.List(ctx, app)
 }
 
 // Add the provided set of EventPlayers
@@ -44,7 +44,7 @@ func (e *EventPlayers) Update(ctx context.Context, app *application.Application)
 		return err
 	}
 
-	return e.list(ctx, app)
+	return e.List(ctx, app)
 }
 
 // Drop also uses Update
@@ -83,7 +83,7 @@ func (e *EventPlayers) drop(ctx context.Context, app *application.Application) e
 	return err
 }
 
-func (e *EventPlayers) list(ctx context.Context, app *application.Application) error {
+func (e *EventPlayers) List(ctx context.Context, app *application.Application) error {
 	stmt := `
 		SELECT p.id, p.first_name, p.last_name, p.email
 		FROM eventplayers e JOIN players p ON e.player_id = p.id

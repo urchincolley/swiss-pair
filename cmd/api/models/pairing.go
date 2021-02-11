@@ -8,9 +8,9 @@ import (
 )
 
 type Pairing struct {
-	Table        int    `json:"table"`
-	FirstPlayer  Player `json:"first_player"`
-	SecondPlayer Player `json:"second_player"`
+	Table        int `json:"table"`
+	FirstPlayer  int `json:"first_player"`
+	SecondPlayer int `json:"second_player"`
 }
 
 type Pairings struct {
@@ -30,8 +30,12 @@ func (ps *Pairings) Create(ctx context.Context, app *application.Application) er
 
 func (ps *Pairings) Get(ctx context.Context, app *application.Application) error {
 	stmt := `
-		SELECT tble, first_player, second_player
-		FROM pairings WHERE event_id = $1 AND rnd = $2`
+		SELECT
+			tble,
+			first_player,
+			second_player
+		FROM pairings p
+		WHERE event_id = $1 AND rnd = $2`
 
 	rows, err := app.DB.Client.QueryContext(ctx, stmt, ps.EventId, ps.Round)
 	if err != nil {
@@ -42,7 +46,10 @@ func (ps *Pairings) Get(ctx context.Context, app *application.Application) error
 	eps := []Pairing{}
 	for rows.Next() {
 		var p Pairing
-		if err := rows.Scan(&p.Table, &p.FirstPlayer, &p.SecondPlayer); err != nil {
+		err := rows.Scan(
+			&p.Table, p.FirstPlayer, p.SecondPlayer,
+		)
+		if err != nil {
 			return err
 		}
 		eps = append(eps, p)

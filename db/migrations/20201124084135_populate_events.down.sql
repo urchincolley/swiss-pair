@@ -1,1 +1,0 @@
-DROP * FROM public.events

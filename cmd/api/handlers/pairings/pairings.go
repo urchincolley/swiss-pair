@@ -11,6 +11,6 @@ var ListHandler = handlers.Handler{
 	Middleware: []middleware.Middleware{
 		middleware.LogRequest,
 		handlers.IdRequestValidator,
-		validateRoundRequest,
+		handlers.RoundRequestValidator,
 	},
 }
